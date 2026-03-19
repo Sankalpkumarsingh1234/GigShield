@@ -8,11 +8,10 @@ export default function LiveWeatherWidget({ city }) {
 
   useEffect(() => {
     setLoading(true);
-    const cityQuery = CITY_WEATHER_IDS[city] || `${city},IN`;
-    fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cityQuery)}&appid=demo&units=metric`)
+    fetch(`/api/weather?city=${encodeURIComponent(city)}`)
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then(d => {
-        setWeather({ temp: Math.round(d.main.temp), humidity: d.main.humidity, feels: Math.round(d.main.feels_like), desc: d.weather[0]?.description || "", wind: Math.round((d.wind?.speed || 0) * 3.6), aqi: MOCK_WEATHER[city]?.aqi || 80 });
+        setWeather({ temp: d.temp, humidity: d.humidity, feels: d.feels, desc: d.desc, wind: d.wind, aqi: MOCK_WEATHER[city]?.aqi || 80 });
         setLoading(false);
       })
       .catch(() => { setTimeout(() => { setWeather(MOCK_WEATHER[city] || MOCK_WEATHER["Chennai"]); setLoading(false); }, 600); });
