@@ -1,0 +1,17 @@
+export const PIN_RISK = {
+  "600001": { city: "Chennai",   zone: "Anna Nagar",     nfi: 72, reason: "Coastal flooding zone",        lat: 13.09, lng: 80.21 },
+  "600028": { city: "Chennai",   zone: "Adyar",          nfi: 81, reason: "High waterlogging risk",        lat: 13.00, lng: 80.25 },
+  "600017": { city: "Chennai",   zone: "T. Nagar",       nfi: 61, reason: "Dense urban, moderate flood",   lat: 13.04, lng: 80.23 },
+  "400053": { city: "Mumbai",    zone: "Andheri East",   nfi: 74, reason: "Low-lying industrial zone",     lat: 19.11, lng: 72.87 },
+  "400050": { city: "Mumbai",    zone: "Bandra West",    nfi: 28, reason: "Elevated, well-drained",        lat: 19.06, lng: 72.83 },
+  "400012": { city: "Mumbai",    zone: "Dadar",          nfi: 58, reason: "Flood-prone railway belt",      lat: 19.02, lng: 72.84 },
+  "110001": { city: "Delhi",     zone: "Connaught Place",nfi: 65, reason: "High AQI exposure",             lat: 28.63, lng: 77.22 },
+  "110020": { city: "Delhi",     zone: "Saket",          nfi: 48, reason: "Moderate AQI, less flood",      lat: 28.52, lng: 77.21 },
+  "110092": { city: "Delhi",     zone: "Shahdara",       nfi: 77, reason: "Yamuna flood plain",            lat: 28.67, lng: 77.29 },
+  "560001": { city: "Bangalore", zone: "MG Road",        nfi: 38, reason: "Moderate disruption history",   lat: 12.97, lng: 77.61 },
+  "560034": { city: "Bangalore", zone: "Koramangala",    nfi: 55, reason: "Flood-prone low areas",         lat: 12.93, lng: 77.62 },
+  "500001": { city: "Hyderabad", zone: "Charminar",      nfi: 69, reason: "Extreme heat stress zone",      lat: 17.36, lng: 78.47 },
+  "500072": { city: "Hyderabad", zone: "Gachibowli",     nfi: 44, reason: "Tech corridor, moderate risk",  lat: 17.44, lng: 78.35 },
+  "302001": { city: "Jaipur",    zone: "Pink City",      nfi: 52, reason: "Heat + dust storm exposure",    lat: 26.92, lng: 75.82 },
+  "380001": { city: "Ahmedabad", zone: "Old City",       nfi: 63, reason: "Extreme summer heat zone",      lat: 23.02, lng: 72.58 },
+};
