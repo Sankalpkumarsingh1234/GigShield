@@ -1,57 +1,213 @@
-# GigShield — Frontend
+# GigShield — Parametric Insurance Platform
 
-React/Next.js frontend for the GigShield parametric insurance platform.
+**GigShield** is a parametric insurance platform designed for gig workers in India, providing affordable, accessible insurance coverage against weather-related disruptions and income loss. This is the **Phase 1 prototype** frontend built with React and Next.js.
 
-## Quick start
+## 🚀 Features
 
+### For Workers
+- **Seamless Onboarding** — 4-step enrollment process (profile → risk assessment → policy selection → dashboard)
+- **Live Weather Monitoring** — Real-time weather data with heat stress indicators
+- **AI Chat Assistant** — Claude-powered policy guidance contextual to your profile
+- **Claims Dashboard** — Easy claim submission and history tracking
+- **Payment Integration** — UPI-based premium payments and payouts
+- **WhatsApp Integration** — Policy enrollment and claim updates via WhatsApp
+
+### For Insurers / Admin
+- **Fraud Detection** — ML-powered fraud scoring using Isolation Forest algorithm
+- **Risk Analytics** — Zone-based risk mapping across Indian cities
+- **Claims Management** — Overview of claims, payouts, and fraud signals
+- **Weather Forecasting** — Predictive models for seasonal disruption forecasting
+
+## 🛠 Tech Stack
+
+- **Frontend Framework** — Next.js 14 with React 18
+- **UI Components** — Custom React components (SVG maps, gauges, animations)
+- **Weather API** — OpenWeatherMap for live conditions
+- **AI Integration** — Anthropic Claude for chat assistant
+- **Payment Flow** — UPI payment pipeline simulation
+
+## 📋 Quick Start
+
+### Installation
 ```bash
 npm install
 npm run dev
-# → http://localhost:3000
+```
+App opens at **http://localhost:3000**
+
+### Build for Production
+```bash
+npm run build
+npm start
 ```
 
-## Project structure
+## 🏗 Project Architecture
+
+### Worker User Flow
+1. **OnboardingScreen** — Capture worker profile (name, platform, location, earnings)
+2. **RiskScreen** — Display NFI (Non-Farm Income) risk gauge based on pin code and seasonal factors
+3. **PolicyScreen** — Select insurance tier and preview weekly premium
+4. **DashboardScreen** — Post-enrollment hub with 8 tabs:
+   - 🌤 **Live Weather** — Real-time weather and heat stress index
+   - 💬 **AI Chat** — Contextual policy Q&A with Claude
+   - 🔥 **Heat Stress** — Manual heat stress calculator (Rothfusz formula)
+   - 🗺 **Disruption Map** — Interactive India map with city-level disruption alerts
+   - 📋 **Claims History** — Past 5 claims and total payouts
+   - 🧾 **Policy Receipt** — Policy details with PDF export
+   - 💬 **WhatsApp** — Enrollment and claims via WhatsApp
+   - 💳 **UPI Payout** — Payment pipeline visualization
+
+### Insurer/Admin Flow
+- **Overview Tab** — KPIs: premium collected, claims paid, fraud cases
+- **Fraud AI Tab** — Signal breakdown per claim using Isolation Forest scores
+- **Zone Analytics** — Risk mapping by city and seasonal trends
+- **Forecast Tab** — Predictions for seasonal disruptions
+
+## 📁 Project Structure
 
 ```
 src/
-  app/                      # Next.js app router
-    page.jsx                # Entry point — app shell
-    layout.jsx              # HTML shell + metadata
-  data/
-    pinRisk.js              # Pin-code → NFI risk data (15 cities)
-    mockData.js             # Tiers, disruptions, claims, fraud cases, weather
-  utils/
-    premium.js              # calcPremium(), calcHeatIndex(), getSeasonalFactor()
+  app/
+    layout.jsx              # HTML shell + metadata + favicons
+    page.jsx                # Main app entry point (worker + insurer routes)
   components/
     ui/
-      index.jsx             # Badge, StepDots, NFIGauge, shared styles
+      index.jsx             # Shared UI: Badge, StepDots, NFIGauge, styling
     worker/
-      OnboardingScreen.jsx  # Step 1 — name, platform, pin code, earnings
-      RiskScreen.jsx        # Step 2 — NFI gauge + premium factor breakdown
-      PolicyScreen.jsx      # Step 3 — tier selection + weekly premium calc
-      DashboardScreen.jsx   # Step 4 — worker dashboard (8 tabs)
+      OnboardingScreen.jsx  # Step 1 — profile capture
+      RiskScreen.jsx        # Step 2 — NFI gauge + premium breakdow
+      PolicyScreen.jsx      # Step 3 — tier selection + calc
+      DashboardScreen.jsx   # Step 4 — worker dashboard hub
       tabs/
-        LiveWeatherWidget.jsx  # OpenWeatherMap live API + graceful fallback
-        AIChatAssistant.jsx    # Claude-powered chat, policy-context aware
-        HeatStressCard.jsx     # Rothfusz formula, live sliders
-        DisruptionMap.jsx      # SVG India map with pulsing city alerts
-        ClaimsHistory.jsx      # Past 5 claims with total
-        PolicyReceipt.jsx      # Policy card + PDF download (simulated)
-        WhatsAppScreen.jsx     # Animated WhatsApp enrollment flow
-        UPIPaymentFlow.jsx     # 4-stage animated UPI payout pipeline
+        LiveWeatherWidget.jsx    # OpenWeatherMap API + fallback mock data
+        AIChatAssistant.jsx      # Claude API integration (context-aware)
+        HeatStressCard.jsx       # Heat stress calculator with Rothfusz formula
+        DisruptionMap.jsx        # SVG India map with pulsing city alerts
+        ClaimsHistory.jsx        # Past 5 claims summary + totals
+        PolicyReceipt.jsx        # Policy card + PDF download simulation
+        WhatsAppScreen.jsx       # Animated WhatsApp enrollment flow
+        UPIPaymentFlow.jsx       # 4-stage UPI payout pipeline
     insurer/
-      InsurerDashboard.jsx   # Admin view (4 tabs — Overview/Fraud AI/Zones/Forecast)
-      FraudScoreVisualiser.jsx # Isolation Forest signal breakdown per claim
+      InsurerDashboard.jsx       # Admin dashboard (4 tabs)
+      FraudScoreVisualiser.jsx   # Isolation Forest signal breakdown
+  data/
+    mockData.js             # Mock tiers, claims, fraud cases, disruptions
+    pinRisk.js              # Risk scores for 15 Indian cities
+  utils/
+    premium.js              # Premium calculation, heat index, seasonal factors
+  lib/
+    utils.js                # Utility functions
 ```
 
-## Environment variables
+## 🔧 Environment Setup
 
-Create `.env.local` for API keys:
+Create `.env.local` in the project root for optional API keys:
 
 ```env
-# Optional — falls back to realistic mock data without a key
-NEXT_PUBLIC_OPENWEATHER_API_KEY=your_key_here
+# Optional API Keys (app works with mock data without these)
+NEXT_PUBLIC_OPENWEATHER_API_KEY=your_openweather_key_here
+
+# Note: Claude API key for AI chat is currently called from client.
+# For production, move API calls to backend route handlers.
 ```
 
-> The AI Chat tab calls the Anthropic API from the client.  
-> For production, proxy this through an API route to keep keys server-side.
+### API Keys Setup
+
+#### OpenWeatherMap
+- Get a free API key at [openweathermap.org](https://openweathermap.org/api)
+- Add to `.env.local` as `NEXT_PUBLIC_OPENWEATHER_API_KEY`
+- Without it, the app falls back to realistic mock weather data
+
+#### Claude AI Chat
+- The AI Chat assistant currently calls the Anthropic API from the client
+- ⚠️ **Security Note**: For production, move this to a backend API route to keep your API key server-side
+- Currently uses mock responses if API key is unavailable
+
+## 📊 Premium Calculation
+
+The app includes a premium calculator based on:
+- **Base Risk** — Determined by pin code (15 Indian cities with NFI data)
+- **Seasonal Factor** — Adjusts premium based on season (monsoon higher risk)
+- **Heat Index** — Uses Rothfusz formula for perceived temperature
+- **Tier Selection** — Worker chooses coverage level (₹100–₹500/week)
+
+See `src/utils/premium.js` for calculation logic.
+
+## 🎨 UI Components
+
+Custom reusable components in `src/components/ui/`:
+- **Badge** — Styled status indicators
+- **StepDots** — Progress indicator for onboarding
+- **NFIGauge** — Radial risk gauge visualization
+- **Global Styles** — Consistent theming across app
+
+## 🐛 Debugging
+
+### Mock Data
+- Weather, claims, fraud cases, and disruptions all use mock data for development
+- See `src/data/mockData.js` for sample datasets
+- Easily swap mock data with API calls
+
+### Console Logs
+Enable debug mode in components for detailed logs:
+```javascript
+const DEBUG = true;
+DEBUG && console.log("Debug info:", data);
+```
+
+## ⚙️ Available Scripts
+
+```bash
+npm run dev       # Start dev server on http://localhost:3000
+npm run build     # Create optimized production build
+npm start         # Run production build
+npm run lint      # ESLint code quality check
+```
+
+## 🔮 Phase 1 Prototype Notes
+
+- ✅ Complete worker onboarding flow
+- ✅ Live weather integration (with fallback)
+- ✅ AI-powered policy chat
+- ✅ Claims and payout visualization
+- ✅ Insurer fraud detection dashboard
+- 🚧 Payment processing (UPI flow is simulated, not live)
+- 🚧 Database integration (all data currently in-memory)
+- 🚧 PDF export (policy receipt download is simulated)
+- 🚧 WhatsApp real-time updates (enrollment flow visible, not connected)
+
+## 📝 Next Steps for Production
+
+1. **Backend Setup** — Create API routes for:
+   - User registration and authentication
+   - Premium calculation server-side
+   - Claims submission and processing
+   - Payment processing (Razorpay UPI integration)
+
+2. **Database** — Connect to:
+   - PostgreSQL for user, policy, and claim records
+   - Redis for session management
+
+3. **Real Integrations**:
+   - UPI payments via Razorpay
+   - WhatsApp Business API
+   - Email notifications
+   - SMS alerts via Twilio
+
+4. **Security**:
+   - Move API keys to backend
+   - Implement JWT auth
+   - Add CORS and rate limiting
+
+5. **Testing** — Add test coverage for:
+   - Premium calculation logic
+   - User flows (unit + integration)
+   - API mocking
+
+## 📄 License
+
+This project is private/proprietary. © 2026 GigShield.
+
+## 🤝 Contributors
+
+Built as a parametric insurance solution prototype for gig workers in India.
