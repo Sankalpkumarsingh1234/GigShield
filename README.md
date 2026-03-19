@@ -99,29 +99,76 @@ src/
     utils.js                # Utility functions
 ```
 
-## 🔧 Environment Setup
+## � Deploy to Vercel
 
-Create `.env.local` in the project root for optional API keys:
+GigShield is ready for production deployment on Vercel:
 
-```env
-# Optional API Keys (app works with mock data without these)
-NEXT_PUBLIC_OPENWEATHER_API_KEY=your_openweather_key_here
+### Step 1: Push Code to GitHub ✅ (Already Done)
+Your code is on GitHub at: `https://github.com/Sankalpkumarsingh1234/GigShield`
 
-# Note: Claude API key for AI chat is currently called from client.
-# For production, move API calls to backend route handlers.
+### Step 2: Connect Vercel to GitHub
+1. Go to [vercel.com](https://vercel.com) → **Sign Up** → **Continue with GitHub**
+2. Authorize Vercel to access your repositories
+3. Click **Add New Project** → Select **GigShield** from the list
+4. Click **Import**
+
+### Step 3: Configure Environment Variables (⚠️ Important)
+After importing, Vercel opens the configuration page:
+
+**Under "Environment Variables", add:**
+```
+OPENWEATHER_API_KEY = your_key_from_openweathermap.org
+ANTHROPIC_API_KEY = your_key_from_console.anthropic.com
 ```
 
-### API Keys Setup
+> Without these keys, the app falls back to mock data. API keys are **never** exposed to the browser — they stay server-side only.
 
-#### OpenWeatherMap
-- Get a free API key at [openweathermap.org](https://openweathermap.org/api)
-- Add to `.env.local` as `NEXT_PUBLIC_OPENWEATHER_API_KEY`
-- Without it, the app falls back to realistic mock weather data
+### Step 4: Deploy
+Click **Deploy** and wait 2-3 minutes. You'll get a live URL:
+```
+https://gigshield.vercel.app
+```
 
-#### Claude AI Chat
-- The AI Chat assistant currently calls the Anthropic API from the client
-- ⚠️ **Security Note**: For production, move this to a backend API route to keep your API key server-side
-- Currently uses mock responses if API key is unavailable
+### Step 5: Auto-Redeploy
+Every push to `main` automatically triggers a new deployment! 🔄
+
+---
+
+## 🔐 Security: Backend API Routes
+
+All sensitive API calls now go through secure backend routes:
+
+- **Weather** — `/api/weather` proxies requests (API key server-side)
+- **AI Chat** — `/api/chat` proxies Claude requests (API key server-side)
+
+Frontend never sees your API keys! ✅
+
+---
+
+## 🔧 Environment Setup
+
+Create `.env.local` in the project root for local development:
+
+```env
+# Optional API Keys (falls back to realistic mock data without them)
+OPENWEATHER_API_KEY=your_key_here
+ANTHROPIC_API_KEY=your_key_here
+```
+
+> Note: `.env.local` is in `.gitignore` — never committed. Each environment (local, staging, production) has its own secrets via Vercel's environment variable dashboard.
+
+---
+
+## 📋 Running Locally
+
+```bash
+npm install
+npm run dev
+```
+
+Visit **http://localhost:3000**
+
+The app works fully on localhost even without API keys (uses mock data). Add keys to `.env.local` to test real APIs locally.
 
 ## 📊 Premium Calculation
 
@@ -164,45 +211,41 @@ npm start         # Run production build
 npm run lint      # ESLint code quality check
 ```
 
-## 🔮 Phase 1 Prototype Notes
+## 🔮 Phase 1 Prototype Status
 
-- ✅ Complete worker onboarding flow
-- ✅ Live weather integration (with fallback)
-- ✅ AI-powered policy chat
-- ✅ Claims and payout visualization
-- ✅ Insurer fraud detection dashboard
-- 🚧 Payment processing (UPI flow is simulated, not live)
-- 🚧 Database integration (all data currently in-memory)
-- 🚧 PDF export (policy receipt download is simulated)
-- 🚧 WhatsApp real-time updates (enrollment flow visible, not connected)
+### ✅ Completed Features
+- Complete worker onboarding flow (4-step process)
+- Live weather integration (with graceful mock fallback)
+- AI-powered policy chat via Claude (server-side API route)
+- Claims and payout visualization
+- Insurer fraud detection dashboard with Isolation Forest signals
+- **NEW** Secure backend API routes (weather + chat) for Vercel deployment
+
+### 🚧 In Progress / Planned
+- Payment processing (UPI flow is UI mockup, not integrated)
+- Database integration (all data currently in-memory)
+- PDF export (policy receipt download is simulated)
+- WhatsApp real-time updates (enrollment flow visible, not connected)
+- Real payment gateway integration (Razorpay UPI)
+
+---
 
 ## 📝 Next Steps for Production
 
-1. **Backend Setup** — Create API routes for:
-   - User registration and authentication
-   - Premium calculation server-side
-   - Claims submission and processing
-   - Payment processing (Razorpay UPI integration)
+1. **Authentication System** — Add:
+   - User registration and login (OAuth or JWT)
+   - Session management
+   - Role-based access (worker vs. insurer)
 
 2. **Database** — Connect to:
-   - PostgreSQL for user, policy, and claim records
-   - Redis for session management
+   - PostgreSQL for user profiles, policies, claims
+   - Redis for caching and sessions
 
 3. **Real Integrations**:
-   - UPI payments via Razorpay
-   - WhatsApp Business API
-   - Email notifications
-   - SMS alerts via Twilio
-
-4. **Security**:
-   - Move API keys to backend
-   - Implement JWT auth
-   - Add CORS and rate limiting
-
-5. **Testing** — Add test coverage for:
-   - Premium calculation logic
-   - User flows (unit + integration)
-   - API mocking
+   - UPI payments via Razorpay API
+   - WhatsApp Business API for notifications
+   - SMS alerts (Twilio)
+   - Email infrastructure (SendGrid / AWS SES)
 
 ## 📄 License
 
