@@ -255,4 +255,4 @@ This project is private/proprietary. © 2026 GigShield.
 
 Built as a parametric insurance solution prototype for gig workers in India.
 ## 🔗 Live Demo
-Check out the project here: https://gigshie.vercel.app
+Check out the project here: https://gigshield-eta.vercel.app/
