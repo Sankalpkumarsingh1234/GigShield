@@ -1,4 +1,4 @@
-import { hasSupabaseConfig, insertOne } from "@/lib/supabaseServer";
+import { hasSupabaseConfig, insertOne } from "@/lib/superbaseServer";
 
 export async function POST(request) {
   try {

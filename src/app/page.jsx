@@ -16,8 +16,7 @@ export default function GigShieldApp() {
   const contentRef = useRef(null);
 
 
-  function goNext(data) {
-     async function goNext(data) {
+  async function goNext(data) {
     const enriched =
       step === 0
         ? { ...data, nfi: data.pinData.nfi, seasonal: getSeasonalFactor() }
@@ -90,6 +89,7 @@ export default function GigShieldApp() {
           {/* Content */}
           <div ref={contentRef} style={{ padding: "22px", maxHeight: "82vh", overflowY: "auto" }}>
             {step < 4 && <StepDots current={step} total={4} />}
+            {step === 0 && <OnboardingScreen onNext={goNext} />}
             {step === 1 && <RiskScreen data={userData} onNext={goNext} />}
             {step === 2 && <PolicyScreen data={userData} onNext={goNext} />}
             {step === 3 && <DashboardScreen data={userData} />}
