@@ -22,6 +22,10 @@ const inputStyle = {
 const labelStyle = { display: "flex", flexDirection: "column", gap: 6 };
 const labelText  = { fontSize: 13, fontWeight: 600, color: "#1A1512" };
 
+function normalizeEmail(email) {
+  return email.trim().toLowerCase();
+}
+
 const ctaBtn = {
   width: "100%",
   padding: "14px",
@@ -48,7 +52,12 @@ function SignInForm({ onSwitch }) {
     setError("");
     setLoading(true);
 
-    const { error } = await signInWithEmail(form);
+    const normalizedForm = {
+      ...form,
+      email: normalizeEmail(form.email),
+    };
+
+    const { error } = await signInWithEmail(normalizedForm);
     if (error) {
       setError(error.message);
       setLoading(false);
@@ -157,10 +166,11 @@ function SignUpForm({ onSwitch }) {
 
     setError("");
     setLoading(true);
+    const email = normalizeEmail(form.email);
 
     // 1. Create Supabase auth user
     const { data: authData, error: authError } = await signUpWithEmail({
-      email: form.email,
+      email,
       password: form.password,
       name: form.name,
       platform: form.platform,
