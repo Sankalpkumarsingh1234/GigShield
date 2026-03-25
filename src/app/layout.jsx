@@ -1,4 +1,9 @@
+// src/app/layout.jsx
+// REPLACE your existing layout.jsx with this one
+// Wraps entire app in AuthProvider so all pages can use useAuth()
+
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata = {
   title: "GigShield — Income Protection for Delivery Partners",
@@ -8,7 +13,11 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   );
 }
