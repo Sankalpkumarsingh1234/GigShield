@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { INSURER_STATS, ZONE_RISK_MAP, FRAUD_CASES } from "@/data/mockData";
-import { Badge, GLOBAL_STYLES } from "@/components/ui";
+import { Badge } from "@/components/ui";
 import FraudScoreVisualiser from "./FraudScoreVisualiser";
 
 const INSURER_TABS = [
@@ -23,7 +23,6 @@ export default function InsurerDashboard({ onBack }) {
 
   return (
     <>
-      <style>{GLOBAL_STYLES}</style>
       <div style={{ minHeight: "100vh", background: "#F5F0EB", padding: 16, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
         <div style={{ maxWidth: 800, margin: "0 auto" }}>
 

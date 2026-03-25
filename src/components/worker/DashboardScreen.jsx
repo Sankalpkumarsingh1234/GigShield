@@ -143,10 +143,10 @@ export default function DashboardScreen({ data }) {
       )}
 
       {activeTab === "weather"  && <LiveWeatherWidget city={pinData.city} />}
-      {activeTab === "ai"       && <AIChatAssistant userData={data} userId={data.userId} />}
+      {activeTab === "ai"       && <AIChatAssistant userData={data} />}
       {activeTab === "heat"     && <HeatStressCard />}
       {activeTab === "map"      && <DisruptionMap />}
-      {activeTab === "claims"   && <ClaimsHistory userId={data.userId} />}
+      {activeTab === "claims"   && <ClaimsHistory workerId={data?.workerId || "WRK-DEFAULT"} />}
       {activeTab === "policy"   && <PolicyReceipt data={data} />}
       {activeTab === "whatsapp" && <WhatsAppScreen />}
     </div>

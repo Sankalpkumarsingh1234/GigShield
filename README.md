@@ -153,8 +153,6 @@ Create `.env.local` in the project root for local development:
 # Optional API Keys (falls back to realistic mock data without them)
 OPENWEATHER_API_KEY=your_key_here
 ANTHROPIC_API_KEY=your_key_here
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ```
 
 > Note: `.env.local` is in `.gitignore` — never committed. Each environment (local, staging, production) has its own secrets via Vercel's environment variable dashboard.
@@ -257,4 +255,4 @@ This project is private/proprietary. © 2026 GigShield.
 
 Built as a parametric insurance solution prototype for gig workers in India.
 ## 🔗 Live Demo
-Check out the project here: https://gigshie.vercel.app
+Check out the project here: https://gigshield-eta.vercel.app/
