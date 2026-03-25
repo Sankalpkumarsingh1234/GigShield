@@ -1,67 +1,26 @@
 "use client";
 import { useState, useRef } from "react";
 import { getSeasonalFactor } from "@/utils/premium";
-import { GLOBAL_STYLES, StepDots } from "@/components/ui";
-import OnboardingScreen from "@/components/worker/OnboardingScreen";
-import RiskScreen from "@/components/worker/RiskScreen";
-import PolicyScreen from "@/components/worker/PolicyScreen";
-import DashboardScreen from "@/components/worker/DashboardScreen";
-import InsurerDashboard from "@/components/insurer/InsurerDashboard";
-import { TIERS } from "@/data/mockData";
+import { StepDots } from "@/components/ui";
+import OnboardingScreen  from "@/components/worker/OnboardingScreen";
+import RiskScreen        from "@/components/worker/RiskScreen";
+import PolicyScreen      from "@/components/worker/PolicyScreen";
+import DashboardScreen   from "@/components/worker/DashboardScreen";
+import InsurerDashboard  from "@/components/insurer/InsurerDashboard";
 
 export default function GigShieldApp() {
-  const [step, setStep] = useState(0);
-  const [userData, setUserData] = useState({});
-  const [showInsurer, setShowInsurer] = useState(false);
+  const [step,         setStep]         = useState(0);
+  const [userData,     setUserData]     = useState({});
+  const [showInsurer,  setShowInsurer]  = useState(false);
   const contentRef = useRef(null);
 
-
   function goNext(data) {
-     async function goNext(data) {
-    const enriched =
-      step === 0
-        ? { ...data, nfi: data.pinData.nfi, seasonal: getSeasonalFactor() }
-        : data;
-
-    let nextData = enriched;
-
-    if (step === 2) {
-      const tierObj = TIERS.find((t) => t.id === enriched.tier);
-
-      try {
-        const res = await fetch("/api/users", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: enriched.name,
-            platform: enriched.platform,
-            pinCode: enriched.pin,
-            earnings: Number(enriched.earnings),
-            nfi: Number(enriched.nfi),
-            policy: {
-              tier: enriched.tier,
-              premium: enriched.premium,
-              maxPayout: tierObj?.max || 1000,
-            },
-          }),
-        });
-
-        const payload = await res.json();
-
-        if (res.ok && payload?.user?.id) {
-          nextData = {
-            ...enriched,
-            userId: payload.user.id,
-            dbProfile: payload,
-          };
-        }
-      } catch (error) {
-        console.error("Unable to persist user profile:", error);
-      }
-    }
-
-    setUserData((prev) => ({ ...prev, ...nextData }));
-    setStep((s) => s + 1);
+    // Compute seasonal factor once, here, and inject it
+    const enriched = step === 0
+      ? { ...data, nfi: data.pinData.nfi, seasonal: getSeasonalFactor() }
+      : data;
+    setUserData(prev => ({ ...prev, ...enriched }));
+    setStep(s => s + 1);
     contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -69,7 +28,6 @@ export default function GigShieldApp() {
 
   return (
     <>
-      <style>{GLOBAL_STYLES}</style>
       <div style={{ minHeight: "100vh", background: "#F5F0EB", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
         <div style={{ width: "100%", maxWidth: 440, background: "#fff", borderRadius: 24, boxShadow: "0 4px 40px rgba(0,0,0,0.08)", overflow: "hidden" }}>
 
@@ -90,9 +48,10 @@ export default function GigShieldApp() {
           {/* Content */}
           <div ref={contentRef} style={{ padding: "22px", maxHeight: "82vh", overflowY: "auto" }}>
             {step < 4 && <StepDots current={step} total={4} />}
-            {step === 1 && <RiskScreen data={userData} onNext={goNext} />}
-            {step === 2 && <PolicyScreen data={userData} onNext={goNext} />}
-            {step === 3 && <DashboardScreen data={userData} />}
+            {step === 0 && <OnboardingScreen onNext={goNext} />}
+            {step === 1 && <RiskScreen       data={userData} onNext={goNext} />}
+            {step === 2 && <PolicyScreen     data={userData} onNext={goNext} />}
+            {step === 3 && <DashboardScreen  data={userData} />}
           </div>
 
         </div>

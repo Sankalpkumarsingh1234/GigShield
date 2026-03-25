@@ -20,15 +20,18 @@ export function calcPremium(base, nfi, seasonal, claimBonus) {
  * @returns {number} Feels-like temperature in Celsius (rounded)
  */
 export function calcHeatIndex(tempC, humidity) {
+  const T = tempC;
+  const R = humidity;
   const hi =
-    -8.78 +
-    1.61 * tempC +
-    2.34 * humidity -
-    0.146 * (tempC * humidity) / 10 -
-    0.013 * (tempC * tempC) / 10 -
-    0.016 * (humidity * humidity) / 100 +
-    0.002 * (tempC * tempC * humidity) / 1000 +
-    0.00086 * (tempC * humidity * humidity) / 10000;
+    -8.78469475556 +
+    1.61139411 * T +
+    2.3385491 * R -
+    0.14611605 * T * R -
+    0.012308094 * T * T -
+    0.016424828 * R * R +
+    0.002211732 * T * T * R +
+    0.00072546 * T * R * R -
+    0.000003582 * T * T * R * R;
   return Math.round(Math.max(tempC, hi));
 }
 

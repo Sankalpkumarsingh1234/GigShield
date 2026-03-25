@@ -1,52 +1,49 @@
-import { hasSupabaseConfig, insertOne } from "@/lib/supabaseServer";
+import { query } from "@/lib/db";
+
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const workerId = searchParams.get("worker_id") || "WRK-DEFAULT";
+
+    const { rows } = await query(
+      `SELECT claim_id, trigger_type, trigger_value, city, amount, status,
+              TO_CHAR(created_at, 'Mon DD, YYYY') AS date
+       FROM claims
+       WHERE worker_id = $1
+       ORDER BY created_at DESC
+       LIMIT 20`,
+      [workerId]
+    );
+
+    const total = rows.reduce((s, c) => s + (c.amount || 0), 0);
+
+    return Response.json({ claims: rows, total });
+  } catch (err) {
+    console.error("Claims fetch error:", err);
+    return Response.json({ claims: [], total: 0, error: err.message }, { status: 500 });
+  }
+}
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { userId, trigger, amount, status = "paid" } = body || {};
+    const { claim_id, worker_id, trigger_type, trigger_value, city, amount } = body;
 
-    if (!userId || !trigger || !amount) {
-      return Response.json(
-        { error: "userId, trigger, and amount are required" },
-        { status: 400 }
-      );
+    if (!claim_id || !worker_id || !trigger_type || !amount) {
+      return Response.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    if (!hasSupabaseConfig()) {
-      return Response.json(
-        {
-          mock: true,
-          claim: {
-            id: crypto.randomUUID(),
-            user_id: userId,
-            trigger,
-            amount: Number(amount),
-            status,
-            created_at: new Date().toISOString(),
-          },
-        },
-        { status: 201 }
-      );
-    }
-
-    const { data, error } = await insertOne(
-      "claims",
-      {
-        user_id: userId,
-        trigger,
-        amount: Number(amount),
-        status,
-      },
-      "id,user_id,trigger,amount,status,created_at"
+    const { rows } = await query(
+      `INSERT INTO claims (claim_id, worker_id, trigger_type, trigger_value, city, amount, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'paid')
+       ON CONFLICT (claim_id) DO NOTHING
+       RETURNING *`,
+      [claim_id, worker_id, trigger_type, trigger_value, city, amount]
     );
 
-    if (error || !data) {
-      throw error;
-    }
-
-    return Response.json({ claim: data }, { status: 201 });
-  } catch (error) {
-    console.error("POST /api/claims failed:", error);
-    return Response.json({ error: "Unable to create claim" }, { status: 500 });
+    return Response.json({ success: true, claim: rows[0] });
+  } catch (err) {
+    console.error("Claim insert error:", err);
+    return Response.json({ error: err.message }, { status: 500 });
   }
 }
