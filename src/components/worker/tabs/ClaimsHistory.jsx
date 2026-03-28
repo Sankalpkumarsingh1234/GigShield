@@ -9,16 +9,28 @@ export default function ClaimsHistory({ workerId }) {
 
   useEffect(() => {
     const id = workerId || "WRK-DEFAULT";
-    fetch(`/api/claims?worker_id=${encodeURIComponent(id)}`)
+    const url = workerId ? `/api/users/${encodeURIComponent(id)}` : `/api/claims?worker_id=${encodeURIComponent(id)}`;
+
+    fetch(url)
       .then(r => r.json())
       .then(data => {
-        if (data.claims && data.claims.length > 0) {
-          setClaims(data.claims);
-          setTotal(data.total || 0);
-        } else {
-          setClaims(CLAIMS_HISTORY);
-          setTotal(CLAIMS_HISTORY.reduce((s, c) => s + c.amount, 0));
+        let claimsPayload = [];
+        if (Array.isArray(data.claims)) {
+          claimsPayload = data.claims;
         }
+
+        if (claimsPayload.length > 0) {
+          setClaims(claimsPayload);
+          setTotal(
+            data.total !== undefined
+              ? data.total
+              : claimsPayload.reduce((sum, c) => sum + (c.amount || 0), 0)
+          );
+          return;
+        }
+
+        setClaims(CLAIMS_HISTORY);
+        setTotal(CLAIMS_HISTORY.reduce((s, c) => s + c.amount, 0));
       })
       .catch(() => {
         setClaims(CLAIMS_HISTORY);

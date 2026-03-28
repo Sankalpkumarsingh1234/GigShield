@@ -49,7 +49,11 @@ export async function POST(request) {
     );
 
     if (userError || !createdUser) {
-      throw userError;
+      console.error("User insert failed:", userError);
+      return Response.json(
+        { error: userError?.message || JSON.stringify(userError) || "Unable to create user" },
+        { status: 500 }
+      );
     }
 
     const { data: createdPolicy, error: policyError } = await insertOne(
@@ -65,12 +69,18 @@ export async function POST(request) {
     );
 
     if (policyError || !createdPolicy) {
-      throw policyError;
+      console.error("Policy insert failed:", policyError);
+      return Response.json(
+        { error: policyError?.message || JSON.stringify(policyError) || "Unable to create policy" },
+        { status: 500 }
+      );
     }
 
     return Response.json({ user: createdUser, policy: createdPolicy }, { status: 201 });
   } catch (error) {
     console.error("POST /api/users failed:", error);
-    return Response.json({ error: "Unable to create user" }, { status: 500 });
+    const errorMessage =
+      error?.message || (typeof error === "string" ? error : JSON.stringify(error));
+    return Response.json({ error: errorMessage || "Unable to create user" }, { status: 500 });
   }
 }

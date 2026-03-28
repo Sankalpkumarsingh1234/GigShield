@@ -3,7 +3,7 @@
 // Adds: auth awareness, pre-fills onboarding from Supabase profile, sign-out
 
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getSeasonalFactor } from "@/utils/premium";
 import { StepDots } from "@/components/ui";
@@ -23,6 +23,28 @@ export default function GigShieldApp() {
   const [userData,    setUserData]    = useState({});
   const [showInsurer, setShowInsurer] = useState(false);
   const contentRef = useRef(null);
+
+  useEffect(() => {
+    if (user && profile) {
+      const pinData = profile.pin_code
+        ? PIN_RISK[profile.pin_code] || { nfi: 55, city: "Your city", zone: "Area", reason: "Average risk" }
+        : null;
+
+      setUserData(prev => ({
+        ...prev,
+        workerId: profile.user_id,
+        name: profile.name || "",
+        platform: profile.platform || "Zomato",
+        pin: profile.pin_code || "",
+        pinData,
+        earnings: profile.earnings ? String(profile.earnings) : "",
+        nfi: profile.nfi || pinData?.nfi || 55,
+        tier: prev.tier || "standard",
+        premium: prev.premium || 0,
+      }));
+      setStep(3);
+    }
+  }, [user, profile]);
 
   // Show loading spinner while auth state resolves
   if (loading) {

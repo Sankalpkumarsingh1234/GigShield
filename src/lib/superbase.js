@@ -1,92 +1,162 @@
-// src/lib/supabase.js
+// src/lib/superbase.js
 // Supabase client + auth helpers
-// IMPORTANT: run `npm install @supabase/supabase-js @supabase/ssr` first
+import { createClient } from "@supabase/supabase-js";
 
 let _supabase = null;
 
-function getClient() {
-  if (_supabase) return _supabase;
-  try {
-    // Dynamic require prevents crash when package is not yet installed
-    const { createClient } = require("@supabase/supabase-js");
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!url || !key) {
-      console.warn("[GigShield] Supabase env vars not set — auth is in mock mode.");
-      return null;
-    }
-    _supabase = createClient(url, key);
-    return _supabase;
-  } catch {
-    console.warn("[GigShield] @supabase/supabase-js not installed. Run: npm install @supabase/supabase-js @supabase/ssr");
-    return null;
+function getEnvConfig() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  console.log("SUPABASE URL", process.env.NEXT_PUBLIC_SUPABASE_URL);
+  console.log("ANON KEY", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.slice(0, 10));
+
+  if (!url || !anonKey) {
+    return { url: null, anonKey: null };
   }
+
+  return { url, anonKey };
 }
 
-// Lazy proxy — imports never crash even when package/env vars are missing
-export const supabase = new Proxy(
-  {},
-  {
-    get(_, prop) {
-      const client = getClient();
-      if (!client) {
-        // Stub: return a function that returns a resolved promise with an error
-        if (prop === "auth") {
-          const stub = () => Promise.resolve({ data: null, error: new Error("Supabase not configured") });
-          return { signUp: stub, signInWithPassword: stub, signOut: stub, getSession: stub, getUser: stub, onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }) };
-        }
-        return () => Promise.resolve({ data: null, error: new Error("Supabase not configured") });
-      }
-      const val = client[prop];
-      return typeof val === "function" ? val.bind(client) : val;
-    },
-  }
-);
+function createStubClient(message) {
+  const authError = new Error(message);
+  const authStub = async () => ({ data: null, error: authError });
 
-// ── Auth helpers ──────────────────────────────────────────────────────────────
+  return {
+    auth: {
+      signUp: authStub,
+      signInWithPassword: authStub,
+      signOut: async () => ({ error: null }),
+      getSession: async () => ({ data: { session: null }, error: authError }),
+      getUser: async () => ({ data: { user: null }, error: authError }),
+      onAuthStateChange: () => ({
+        data: { subscription: { unsubscribe: () => {} } },
+      }),
+    },
+    from() {
+      return {
+        insert: () => ({
+          select: () => ({
+            single: async () => ({ data: null, error: authError }),
+          }),
+        }),
+        select: () => ({
+          eq: () => ({
+            single: async () => ({ data: null, error: authError }),
+          }),
+        }),
+      };
+    },
+  };
+}
+
+function getClient() {
+  if (_supabase) return _supabase;
+
+  const { url, anonKey } = getEnvConfig();
+  if (!url || !anonKey) {
+    _supabase = createStubClient(
+      "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local and restart the dev server."
+    );
+    
+
+    return _supabase;
+  }
+
+  _supabase = createClient(url, anonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  });
+
+  return _supabase;
+}
+
+function translateAuthError(error) {
+  const message = error?.message || "";
+
+  if (!message) {
+    return "Authentication failed. Please try again.";
+  }
+
+  if (/invalid api key/i.test(message)) {
+    return "Supabase rejected the public API key. Check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, then restart the app.";
+  }
+
+  if (/invalid login credentials/i.test(message)) {
+    return "Invalid email or password. Double-check your credentials and try again.";
+  }
+
+  if (/email rate limit exceeded/i.test(message)) {
+    return "Too many email attempts. Please wait a few minutes and try again.";
+  }
+
+  return message;
+}
+
+export const supabase = getClient();
 
 export async function signUpWithEmail({ email, password, name, platform, phone }) {
-  const client = getClient();
-  if (!client) return { data: null, error: new Error("Supabase not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local, then run: npm install @supabase/supabase-js @supabase/ssr") };
-  return client.auth.signUp({
+  console.log("signUpWithEmail payload", {
+    email,
+    emailLength: email?.length,
+    emailJson: JSON.stringify(email),
+    passwordLength: password?.length,
+    name,
+    platform,
+    phone,
+  });
+
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: { data: { name, platform, phone } },
   });
+
+  if (error) {
+    console.error("Supabase signUp response error:", error);
+  }
+
+  return {
+    data,
+    error: error ? new Error(translateAuthError(error)) : null,
+  };
 }
 
 export async function signInWithEmail({ email, password }) {
-  const client = getClient();
-  if (!client) return { data: null, error: new Error("Supabase not configured.") };
-  return client.auth.signInWithPassword({ email, password });
+  console.log("signInWithEmail payload", {
+    email,
+    passwordLength: password?.length,
+  });
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    console.error("Supabase signIn response error:", error);
+  }
+
+  return {
+    data,
+    error: error ? new Error(translateAuthError(error)) : null,
+  };
 }
 
 export async function signOut() {
-  const client = getClient();
-  if (!client) return { error: null };
-  return client.auth.signOut();
+  return supabase.auth.signOut();
 }
 
 export async function getSession() {
-  const client = getClient();
-  if (!client) return { session: null, error: null };
-  const { data: { session }, error } = await client.auth.getSession();
-  return { session, error };
+  const { data, error } = await supabase.auth.getSession();
+  return { session: data?.session ?? null, error };
 }
 
 export async function getUser() {
-  const client = getClient();
-  if (!client) return { user: null, error: null };
-  const { data: { user }, error } = await client.auth.getUser();
-  return { user, error };
+  const { data, error } = await supabase.auth.getUser();
+  return { user: data?.user ?? null, error };
 }
 
-// ── Profile helpers ───────────────────────────────────────────────────────────
-
 export async function createUserProfile({ userId, name, platform, phone, pinCode, earnings, nfi }) {
-  const client = getClient();
-  if (!client) return { data: null, error: null };
-  return client
+  return supabase
     .from("user_profiles")
     .insert({
       user_id: userId,
@@ -102,7 +172,7 @@ export async function createUserProfile({ userId, name, platform, phone, pinCode
 }
 
 export async function getUserProfile(userId) {
-  const client = getClient();
-  if (!client) return { data: null, error: null };
-  return client.from("user_profiles").select("*").eq("user_id", userId).single();
+  return supabase.from("user_profiles").select("*").eq("user_id", userId).single();
 }
+
+export { translateAuthError };

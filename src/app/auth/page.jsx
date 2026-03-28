@@ -59,6 +59,7 @@ function SignInForm({ onSwitch }) {
 
     const { error } = await signInWithEmail(normalizedForm);
     if (error) {
+      console.error("Supabase sign-in error:", error);
       setError(error.message);
       setLoading(false);
       return;
@@ -178,6 +179,7 @@ function SignUpForm({ onSwitch }) {
     });
 
     if (authError) {
+      console.error("Supabase sign-up error:", authError);
       setError(authError.message);
       setLoading(false);
       return;
