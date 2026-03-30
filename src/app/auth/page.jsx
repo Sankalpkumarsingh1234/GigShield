@@ -2,7 +2,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signUpWithEmail, signInWithEmail, createUserProfile } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import { PIN_RISK } from "@/data/pinRisk";
 
 // ── Shared styles (matches existing GigShield design tokens) ───────────────
@@ -23,7 +23,46 @@ const labelStyle = { display: "flex", flexDirection: "column", gap: 6 };
 const labelText  = { fontSize: 13, fontWeight: 600, color: "#1A1512" };
 
 function normalizeEmail(email) {
-  return email.trim().toLowerCase();
+  return email
+    .normalize("NFKC")
+    .replace(/\p{Cf}/gu, "")
+    .replace(/\s+/gu, "")
+    .toLowerCase();
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function formatAuthError(error) {
+  if (!error) {
+    return "Something went wrong.";
+  }
+
+  const details = [
+    error.code ? `code: ${error.code}` : null,
+    error.status ? `status: ${error.status}` : null,
+  ].filter(Boolean);
+
+  return details.length
+    ? `${error.message} (${details.join(", ")})`
+    : error.message;
+}
+
+async function readAuthResponse(response) {
+  const data = await response.json().catch(() => ({}));
+  if (response.ok) {
+    return { data, error: null };
+  }
+
+  return {
+    data: null,
+    error: {
+      message: data?.error || "Something went wrong.",
+      code: data?.code,
+      status: response.status,
+    },
+  };
 }
 
 const ctaBtn = {
@@ -43,6 +82,7 @@ const ctaBtn = {
 // ── Sign In Form ─────────────────────────────────────────────────────────────
 function SignInForm({ onSwitch }) {
   const router = useRouter();
+  const { setUser } = useAuth();
   const [form,    setForm]    = useState({ email: "", password: "" });
   const [error,   setError]   = useState("");
   const [loading, setLoading] = useState(false);
@@ -57,14 +97,33 @@ function SignInForm({ onSwitch }) {
       email: normalizeEmail(form.email),
     };
 
-    const { error } = await signInWithEmail(normalizedForm);
-    if (error) {
-      console.error("Supabase sign-in error:", error);
-      setError(error.message);
+    if (!isValidEmail(normalizedForm.email)) {
+      setError("Please enter a valid email address.");
       setLoading(false);
       return;
     }
 
+    const response = await fetch("/api/auth/signin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(normalizedForm),
+    });
+    const { data, error } = await readAuthResponse(response);
+    if (error) {
+      console.error("Sign-in error details:", {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        status: error.status,
+        fullError: error,
+      });
+      setError(formatAuthError(error));
+      setLoading(false);
+      return;
+    }
+
+    setUser(data?.user || null);
     router.push("/");
   }
 
@@ -125,6 +184,7 @@ function SignInForm({ onSwitch }) {
 // ── Sign Up Form ─────────────────────────────────────────────────────────────
 function SignUpForm({ onSwitch }) {
   const router = useRouter();
+  const { setUser } = useAuth();
   const [step,    setStep]    = useState(1); // 1 = account, 2 = profile
   const [form,    setForm]    = useState({
     name: "", email: "", password: "", confirmPassword: "",
@@ -169,46 +229,51 @@ function SignUpForm({ onSwitch }) {
     setLoading(true);
     const email = normalizeEmail(form.email);
 
-    // 1. Create Supabase auth user
-    const { data: authData, error: authError } = await signUpWithEmail({
-      email,
-      password: form.password,
-      name: form.name,
-      platform: form.platform,
-      phone: form.phone,
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address.");
+      setLoading(false);
+      return;
+    }
+
+    const nfi = pinData?.nfi || 55;
+    const response = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        name: form.name,
+        email,
+        password: form.password,
+        phone: form.phone,
+        platform: form.platform,
+        pinCode: form.pin,
+        earnings: form.earnings,
+        nfi,
+      }),
     });
+    const { data: authData, error: authError } = await readAuthResponse(response);
 
     if (authError) {
-      console.error("Supabase sign-up error:", authError);
-      setError(authError.message);
+      console.error("Sign-up error details:", {
+        name: authError.name,
+        message: authError.message,
+        code: authError.code,
+        status: authError.status,
+        fullError: authError,
+      });
+      setError(formatAuthError(authError));
       setLoading(false);
       return;
     }
 
     const userId = authData?.user?.id;
     if (!userId) {
-      setError("Account created — please check your email to confirm.");
+      setError("Account created, but we could not load your session.");
       setLoading(false);
       return;
     }
 
-    // 2. Create user profile in database
-    const nfi = pinData?.nfi || 55;
-    const { error: profileError } = await createUserProfile({
-      userId,
-      name: form.name,
-      platform: form.platform,
-      phone: form.phone,
-      pinCode: form.pin,
-      earnings: form.earnings,
-      nfi,
-    });
-
-    if (profileError) {
-      console.warn("Profile creation failed:", profileError.message);
-      // Non-fatal: auth succeeded, profile can be created later
-    }
-
+    setUser(authData?.user || null);
     router.push("/");
   }
 
@@ -406,7 +471,7 @@ function SignUpForm({ onSwitch }) {
 
 // ── Main Auth Page ────────────────────────────────────────────────────────────
 export default function AuthPage() {
-  const [mode, setMode] = useState("signup"); // "signup" | "signin"
+  const [mode, setMode] = useState("signin"); // "signup" | "signin"
 
   return (
     <div

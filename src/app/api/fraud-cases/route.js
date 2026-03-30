@@ -1,5 +1,6 @@
 import { query } from "@/lib/db";
 
+// GET /api/fraud-cases?status=pending — fetch fraud cases (insurer view)
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -23,17 +24,21 @@ export async function GET(request) {
 
     return Response.json({ cases: rows });
   } catch (err) {
-    console.error("Fraud cases fetch error:", err);
+    console.error("Fraud cases GET error:", err);
     return Response.json({ cases: [], error: err.message }, { status: 500 });
   }
 }
 
+// PATCH /api/fraud-cases — approve or reject a fraud case
 export async function PATCH(request) {
   try {
     const { case_id, status } = await request.json();
 
     if (!case_id || !["approved", "rejected", "pending"].includes(status)) {
-      return Response.json({ error: "case_id and valid status required" }, { status: 400 });
+      return Response.json(
+        { error: "case_id and valid status (approved/rejected/pending) required" },
+        { status: 400 }
+      );
     }
 
     const { rows } = await query(
@@ -47,7 +52,7 @@ export async function PATCH(request) {
 
     return Response.json({ success: true, case: rows[0] });
   } catch (err) {
-    console.error("Fraud case update error:", err);
+    console.error("Fraud cases PATCH error:", err);
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

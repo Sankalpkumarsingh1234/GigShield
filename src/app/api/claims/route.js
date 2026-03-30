@@ -1,5 +1,6 @@
 import { query } from "@/lib/db";
 
+// GET /api/claims?worker_id=xxx — fetch claims for a worker
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -19,11 +20,12 @@ export async function GET(request) {
 
     return Response.json({ claims: rows, total });
   } catch (err) {
-    console.error("Claims fetch error:", err);
+    console.error("Claims GET error:", err);
     return Response.json({ claims: [], total: 0, error: err.message }, { status: 500 });
   }
 }
 
+// POST /api/claims — record a new auto-paid claim
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -43,7 +45,7 @@ export async function POST(request) {
 
     return Response.json({ success: true, claim: rows[0] });
   } catch (err) {
-    console.error("Claim insert error:", err);
+    console.error("Claims POST error:", err);
     return Response.json({ error: err.message }, { status: 500 });
   }
 }

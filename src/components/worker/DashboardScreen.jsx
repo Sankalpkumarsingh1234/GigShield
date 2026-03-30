@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { TIERS, DISRUPTION_FEED } from "@/data/mockData";
+import { PIN_RISK } from "@/data/pinRisk";
 import { Badge } from "@/components/ui";
 import UPIPaymentFlow   from "./tabs/UPIPaymentFlow";
 import LiveWeatherWidget from "./tabs/LiveWeatherWidget";
@@ -20,11 +21,12 @@ const TABS = [
   { id: "claims",    label: "Claims"       },
   { id: "policy",    label: "Policy"       },
   { id: "whatsapp",  label: "WhatsApp"     },
+  { id: "profile",   label: "Profile"      },
 ];
 
 const SEV_COLOR = { high: "#EF4444", medium: "#F59E0B", low: "#4CAF82" };
 
-export default function DashboardScreen({ data }) {
+export default function DashboardScreen({ data, onProfileUpdated, onSignOut }) {
   const { name, platform, premium, tier, nfi, pinData, earnings } = data;
   const tierObj = TIERS.find(t => t.id === tier);
   const [activeTab,  setActiveTab]  = useState("dashboard");
@@ -33,6 +35,44 @@ export default function DashboardScreen({ data }) {
   const [simulating, setSimulating] = useState(false);
   const [showUPI,    setShowUPI]    = useState(false);
   const [protected_, setProtected]  = useState(parseInt(earnings || 6000) * 0.22);
+  const [profileForm, setProfileForm] = useState({
+    name: data.name || "",
+    email: data.email || "",
+    phone: data.phone || "",
+    platform: data.platform || "Zomato",
+    pinCode: data.pinCode || "",
+    earnings: data.earnings || "",
+  });
+  const [profileStatus, setProfileStatus] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+
+  async function saveProfile(e) {
+    e.preventDefault();
+    setProfileSaving(true);
+    setProfileStatus("");
+
+    const nextPinData = PIN_RISK[profileForm.pinCode];
+    const response = await fetch("/api/auth/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        ...profileForm,
+        nfi: nextPinData?.nfi || data.nfi || 55,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setProfileStatus(result?.error || "Could not update your profile.");
+      setProfileSaving(false);
+      return;
+    }
+
+    onProfileUpdated?.(result.user);
+    setProfileStatus("Profile updated successfully.");
+    setProfileSaving(false);
+  }
 
   function simulateDisruption() {
     setSimulating(true);
@@ -149,6 +189,96 @@ export default function DashboardScreen({ data }) {
       {activeTab === "claims"   && <ClaimsHistory workerId={data?.workerId || "WRK-DEFAULT"} />}
       {activeTab === "policy"   && <PolicyReceipt data={data} />}
       {activeTab === "whatsapp" && <WhatsAppScreen />}
+      {activeTab === "profile" && (
+        <form onSubmit={saveProfile} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ padding: "12px 14px", background: "#FAFAF8", border: "1px solid #E0D9D0", borderRadius: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1A1512", marginBottom: 4 }}>Personal details</div>
+            <div style={{ fontSize: 11, color: "#6B6258" }}>Update your dashboard profile and coverage details.</div>
+          </div>
+
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#1A1512" }}>Full name</span>
+            <input
+              value={profileForm.name}
+              onChange={e => setProfileForm(form => ({ ...form, name: e.target.value }))}
+              style={{ padding: "11px 14px", borderRadius: 10, border: "1.5px solid #E0D9D0", fontSize: 14, background: "#FAFAF8" }}
+            />
+          </label>
+
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#1A1512" }}>Email</span>
+            <input
+              type="email"
+              value={profileForm.email}
+              onChange={e => setProfileForm(form => ({ ...form, email: e.target.value }))}
+              style={{ padding: "11px 14px", borderRadius: 10, border: "1.5px solid #E0D9D0", fontSize: 14, background: "#FAFAF8" }}
+            />
+          </label>
+
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#1A1512" }}>Phone</span>
+            <input
+              value={profileForm.phone}
+              onChange={e => setProfileForm(form => ({ ...form, phone: e.target.value }))}
+              style={{ padding: "11px 14px", borderRadius: 10, border: "1.5px solid #E0D9D0", fontSize: 14, background: "#FAFAF8" }}
+            />
+          </label>
+
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#1A1512" }}>Platform</span>
+            <select
+              value={profileForm.platform}
+              onChange={e => setProfileForm(form => ({ ...form, platform: e.target.value }))}
+              style={{ padding: "11px 14px", borderRadius: 10, border: "1.5px solid #E0D9D0", fontSize: 14, background: "#FAFAF8" }}
+            >
+              <option value="Zomato">Zomato</option>
+              <option value="Swiggy">Swiggy</option>
+            </select>
+          </label>
+
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#1A1512" }}>Pin code</span>
+            <input
+              maxLength={6}
+              value={profileForm.pinCode}
+              onChange={e => setProfileForm(form => ({ ...form, pinCode: e.target.value.replace(/\D/g, "") }))}
+              style={{ padding: "11px 14px", borderRadius: 10, border: "1.5px solid #E0D9D0", fontSize: 14, background: "#FAFAF8" }}
+            />
+          </label>
+
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#1A1512" }}>Weekly earnings (INR)</span>
+            <input
+              type="number"
+              value={profileForm.earnings}
+              onChange={e => setProfileForm(form => ({ ...form, earnings: e.target.value }))}
+              style={{ padding: "11px 14px", borderRadius: 10, border: "1.5px solid #E0D9D0", fontSize: 14, background: "#FAFAF8" }}
+            />
+          </label>
+
+          {profileStatus && (
+            <div style={{ padding: "10px 12px", background: profileStatus.includes("success") ? "#E8F5EE" : "#FEE2E2", borderRadius: 10, fontSize: 12, color: profileStatus.includes("success") ? "#2D6B4A" : "#991B1B" }}>
+              {profileStatus}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={profileSaving}
+            style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: "#FF6B35", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: profileSaving ? 0.7 : 1 }}
+          >
+            {profileSaving ? "Saving..." : "Save details"}
+          </button>
+
+          <button
+            type="button"
+            onClick={onSignOut}
+            style={{ width: "100%", padding: "12px", borderRadius: 12, border: "1.5px solid #E0D9D0", background: "#fff", color: "#6B6258", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+          >
+            Sign out
+          </button>
+        </form>
+      )}
     </div>
   );
 }

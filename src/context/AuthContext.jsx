@@ -1,63 +1,67 @@
-// src/context/AuthContext.jsx
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
-import { supabase, getUserProfile } from "@/lib/supabase";
 
-const AuthContext = createContext(null);
+const AuthContext = createContext({ user: null, loading: false });
 
 export function AuthProvider({ children }) {
-  const [user,    setUser]    = useState(null);
-  const [profile, setProfile] = useState(null);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data }) => {
-      const session = data?.session ?? null;
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadProfile(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    }).catch(() => setLoading(false));
+    let active = true;
 
-    // Listen for auth state changes (login / logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await loadProfile(session.user.id);
-        } else {
-          setProfile(null);
+    async function loadSession() {
+      try {
+        const response = await fetch("/api/auth/me", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        });
+        const data = await response.json();
+        if (active) {
+          setUser(data?.user || null);
+        }
+      } catch (error) {
+        console.error("Failed to load auth session:", error);
+        if (active) {
+          setUser(null);
+        }
+      } finally {
+        if (active) {
           setLoading(false);
         }
       }
-    );
+    }
 
-    return () => subscription?.unsubscribe?.();
+    loadSession();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  async function loadProfile(userId) {
+  async function signOut() {
     try {
-      const { data } = await getUserProfile(userId);
-      setProfile(data ?? null);
-    } catch {
-      setProfile(null);
-    } finally {
-      setLoading(false);
+      await fetch("/api/auth/signout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Failed to sign out:", error);
     }
+    setUser(null);
   }
 
-  return (
-    <AuthContext.Provider value={{ user, profile, loading, setProfile }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = {
+    user,
+    loading,
+    setUser,
+    signOut,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within <AuthProvider>");
-  return ctx;
+  return useContext(AuthContext);
 }
