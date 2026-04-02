@@ -183,7 +183,17 @@ Tiers: Basic ₹25/wk, Standard ₹45/wk, Premium ₹70/wk (before adjustments)
 ```
 GET /api/db/setup
 ```
-Creates all tables, indexes, triggers, views, and seeds realistic data.
+Creates all tables, indexes, triggers, views, and seeds connected showcase data across users, policies, premium payments, claims, fraud cases, disruption events, and trigger alerts.
+
+Force-refresh the seeded showcase dataset:
+```bash
+/api/db/setup?force=true
+```
+
+Pull live weather-backed disruption alerts into the database:
+```bash
+/api/disruptions/ingest?cities=Chennai,Delhi,Mumbai
+```
 
 ### 2. Environment Variables
 ```env
