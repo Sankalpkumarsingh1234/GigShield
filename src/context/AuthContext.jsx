@@ -1,7 +1,14 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 
-const AuthContext = createContext({ user: null, loading: false });
+const noop = () => {};
+
+const AuthContext = createContext({
+  user: null,
+  loading: false,
+  setUser: noop,
+  signOut: noop,
+});
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);

@@ -22,7 +22,7 @@ GigShield solves a real, massive problem: **12+ million Indian delivery workers*
 | Auth | Custom HMAC session tokens (no Supabase dependency) |
 | Weather | OpenWeatherMap API |
 | Styling | CSS-in-JS inline styles (zero dependencies) |
-| Payments | UPI flow simulation (Razorpay integration-ready) |
+| Payments | Razorpay Checkout (test mode or demo fallback) |
 
 ---
 
@@ -49,7 +49,7 @@ fraud_cases (id SERIAL PK, case_id UNIQUE, worker_name, worker_id, pin_code, tri
 -- Weekly UPI debit records
 premium_payments (id SERIAL PK, payment_id UNIQUE, policy_id FK, worker_id, amount, status, upi_ref, billing_period, created_at)
 
--- Live disruption alert feed
+-- Live disruption alert feed (real DB-backed alerts only)
 trigger_alerts (id SERIAL PK, alert_id UNIQUE, alert_type, city, pin_code, severity, title, description, value, threshold, triggered, resolved, resolved_at, created_at)
 ```
 
@@ -91,7 +91,8 @@ update_updated_at_column() -- Auto-update updated_at on users & policies
 ### Analytics & Feed
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/disruptions` | GET | Live feed from `trigger_alerts` table |
+| `/api/disruptions` | GET | Real-only feed from `trigger_alerts` table |
+| `/api/disruptions/ingest` | GET/POST | Pull live weather-backed disruptions into DB |
 | `/api/insurer/stats` | GET | Full insurer KPI dashboard (real DB) |
 | `/api/fraud-cases` | GET | All fraud cases with ML signals |
 | `/api/fraud-cases` | PATCH | Approve/reject/escalate case |
@@ -165,7 +166,7 @@ Tiers: Basic ₹25/wk, Standard ₹45/wk, Premium ₹70/wk (before adjustments)
 ### Worker Journey
 1. **Sign up** → profile (name, platform, pin code, earnings)
 2. **Risk assessment** → NFI score, zone analysis, premium breakdown
-3. **Policy selection** → Basic/Standard/Premium with live calculator
+3. **Policy tab** → choose Basic/Standard/Premium and pay via Razorpay test checkout
 4. **Dashboard** → 9 tabs: weather, AI chat, heat index, risk map, claims, policy, WhatsApp, profile
 
 ### Insurer Journey  
@@ -195,12 +196,19 @@ Pull live weather-backed disruption alerts into the database:
 /api/disruptions/ingest?cities=Chennai,Delhi,Mumbai
 ```
 
+The worker dashboard feed is now **real-only**:
+- If `trigger_alerts` has live rows, they are shown.
+- If there are no live rows, the UI shows an empty state.
+- Mock disruption cards are no longer used as a fallback.
+
 ### 2. Environment Variables
 ```env
 DATABASE_URL=postgresql://...    # Replit managed (auto-set)
 GROQ_API_KEY=gsk_...             # Free at console.groq.com
 OPENWEATHER_API_KEY=...          # Free at openweathermap.org
 AUTH_SECRET=your-secret-here     # Any random 32+ char string
+RAZORPAY_KEY_ID=rzp_test_...     # Razorpay test key id
+RAZORPAY_KEY_SECRET=...          # Razorpay test key secret
 ```
 
 ### 3. Run
@@ -208,6 +216,10 @@ AUTH_SECRET=your-secret-here     # Any random 32+ char string
 npm install
 npm run dev    # http://localhost:5000
 ```
+
+### Payments
+- The `Policy` tab uses Razorpay Checkout in test mode when `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` are present.
+- If Razorpay test keys are missing or invalid, the app falls back to a local demo payment success path so the dashboard flow remains testable.
 
 ---
 

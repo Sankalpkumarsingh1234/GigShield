@@ -1,8 +1,5 @@
-// src/app/layout.jsx
-// REPLACE your existing layout.jsx with this one
-// Wraps entire app in AuthProvider so all pages can use useAuth()
-
 import "./globals.css";
+import { LanguageProvider } from "@/i18n/LanguageContext";
 import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata = {
@@ -14,9 +11,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </LanguageProvider>
       </body>
     </html>
   );
