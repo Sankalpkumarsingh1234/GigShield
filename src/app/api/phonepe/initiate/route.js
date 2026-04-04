@@ -10,7 +10,8 @@ export async function POST(request) {
     }
 
     const merchantTransactionId = `GS_${Date.now()}_${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:5000';
+    const requestUrl = new URL(request.url);
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || requestUrl.origin;
 
     // PhonePe sandbox — no real creds needed for testing
     let result;

@@ -217,6 +217,23 @@ npm install
 npm run dev    # http://localhost:5000
 ```
 
+### 4. Deploy To Vercel
+```bash
+npm install -g vercel
+vercel
+```
+
+In the Vercel project settings:
+- Import the repo and keep the default framework preset as `Next.js`.
+- Leave the build command as `npm run build`.
+- Copy the required keys from `.env.example` into Vercel Environment Variables.
+- Set `NEXT_PUBLIC_BASE_URL` to your production site URL if you want an explicit fixed base URL.
+
+After the first deploy, initialize the database once:
+```bash
+https://your-project.vercel.app/api/db/setup
+```
+
 ### Payments
 - The `Policy` tab uses Razorpay Checkout in test mode when `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` are present.
 - If Razorpay test keys are missing or invalid, the app falls back to a local demo payment success path so the dashboard flow remains testable.
