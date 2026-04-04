@@ -6,8 +6,37 @@ export const dynamic = "force-dynamic";
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
+    const scope = searchParams.get("scope");
     const workerId = searchParams.get("worker_id") || "WRK-DEFAULT";
     const limit = parseInt(searchParams.get("limit") || "20");
+
+    if (scope === "insurer") {
+      const { rows } = await query(`
+        SELECT
+          c.claim_id,
+          c.worker_id,
+          c.trigger_type,
+          c.trigger_value,
+          c.city,
+          c.pin_code,
+          c.amount,
+          c.status,
+          c.upi_ref,
+          u.name AS worker_name,
+          TO_CHAR(c.created_at, 'Mon DD, YYYY') AS date,
+          TO_CHAR(c.paid_at, 'Mon DD, YYYY HH24:MI') AS paid_time
+        FROM claims c
+        LEFT JOIN users u ON u.id::text = c.worker_id
+        ORDER BY c.created_at DESC
+        LIMIT $1
+      `, [limit]);
+
+      return Response.json({
+        claims: rows,
+        count: rows.length,
+        meta: { scope: "insurer" },
+      });
+    }
 
     // Support both UUID worker IDs and legacy "WRK-DEFAULT"
     const { rows } = await query(`
@@ -57,6 +86,32 @@ export async function GET(request) {
       count: MOCK_CLAIMS.length,
       _fallback: true,
     });
+  }
+}
+
+export async function PATCH(request) {
+  try {
+    const { claim_id, status } = await request.json();
+
+    if (!claim_id || !["paid", "pending", "rejected", "processing"].includes(status)) {
+      return Response.json({ error: "claim_id and valid status are required" }, { status: 400 });
+    }
+
+    const { rows } = await query(`
+      UPDATE claims
+      SET status = $1
+      WHERE claim_id = $2
+      RETURNING *
+    `, [status, claim_id]);
+
+    if (!rows.length) {
+      return Response.json({ error: "Claim not found" }, { status: 404 });
+    }
+
+    return Response.json({ success: true, claim: rows[0] });
+  } catch (err) {
+    console.error("Claims PATCH error:", err);
+    return Response.json({ error: err.message }, { status: 500 });
   }
 }
 

@@ -40,8 +40,32 @@ export async function GET() {
 
     // ── Zone risk breakdown ────────────────────────────────────────────
     const { rows: zoneRisk } = await query(`
-      SELECT * FROM zone_claims_view
-      ORDER BY total_payout DESC
+      SELECT
+        z.city,
+        z.pin_code,
+        z.total_claims,
+        z.total_payout,
+        z.paid_claims,
+        z.avg_claim,
+        COALESCE(w.worker_count, 0)::INT AS workers,
+        COALESCE(a.active_policies, 0)::INT AS active_policies
+      FROM zone_claims_view z
+      LEFT JOIN (
+        SELECT city, pin_code, COUNT(*)::INT AS worker_count
+        FROM users
+        WHERE role = 'worker'
+        GROUP BY city, pin_code
+      ) w
+        ON w.city = z.city AND w.pin_code = z.pin_code
+      LEFT JOIN (
+        SELECT u.city, u.pin_code, COUNT(*)::INT AS active_policies
+        FROM users u
+        JOIN policies p ON p.user_id = u.id
+        WHERE u.role = 'worker' AND p.active = true
+        GROUP BY u.city, u.pin_code
+      ) a
+        ON a.city = z.city AND a.pin_code = z.pin_code
+      ORDER BY z.total_payout DESC
       LIMIT 12
     `).catch(() => ({ rows: [] }));
 
